@@ -1,6 +1,6 @@
 # 🌱 Sistema de Irrigação Automatizada
 
-Sistema de irrigação com **Arduino UNO** que lê a umidade do solo e abre uma válvula solenoide automaticamente quando o solo está seco, fechando-a quando a umidade volta ao nível desejado. O estado do solo é indicado por LEDs (vermelho = seco, verde = úmido) e todas as mudanças de estado aparecem no Monitor Serial.
+Sistema de irrigação com **Arduino UNO** que lê a umidade do solo e abre uma válvula solenoide automaticamente quando o solo está seco, fechando-a quando a umidade volta ao nível desejado. Todas as mudanças de estado aparecem no Monitor Serial.
 
 O projeto foi validado em simulação no **Tinkercad Circuits** e foi pensado para funcionar, na versão física, de forma **100% solar**, sem ligação à rede elétrica.
 
@@ -10,27 +10,26 @@ O projeto foi validado em simulação no **Tinkercad Circuits** e foi pensado pa
 
 - Leitura da umidade do solo com conversão para porcentagem
 - Acionamento automático do relé (válvula) quando o solo fica seco
-- LED **vermelho** para solo seco e LED **verde** para solo úmido
 - Mensagens no Monitor Serial apenas quando o estado muda:
   - `SOLO SECO` / `COMECOU A IRRIGAR`
   - `SOLO UMIDO` / `PAROU DE IRRIGAR`
 - Limiar de umidade ajustável no código
+- Opção de exibir ou ocultar as leituras contínuas de umidade
 
 ---
 
 ## ⚙️ Como funciona
 
-1. A cada ~0,7 s o Arduino lê o sensor de umidade no pino **A0**.
+1. A cada ~0,7 s o Arduino lê o sensor de umidade no pino **A0** e converte a leitura em porcentagem.
 2. Se a leitura estiver **abaixo do limiar**, o solo é considerado seco:
-   o LED vermelho acende e o pino **D13** aciona o relé, abrindo a válvula.
+   o pino **D13** aciona o relé e a válvula abre.
 3. Quando a leitura volta a ficar **acima do limiar**, o solo é considerado úmido:
-   o LED verde acende, o relé desliga e a válvula fecha.
+   o relé desliga e a válvula fecha.
+4. A variável `irrigando` guarda o estado da válvula, para que as mensagens só apareçam quando o estado muda.
 
 ```
 Sensor de umidade ──► Arduino UNO ──► Transistor ──► Relé ──► Válvula solenoide
-                          │
-                          ├──► LED vermelho (D7)  solo seco
-                          └──► LED verde    (D6)  solo úmido
+       (A0)                (D13)
 ```
 
 ---
@@ -47,10 +46,8 @@ Sensor de umidade ──► Arduino UNO ──► Transistor ──► Relé ─
 | 1 | Transistor NPN | Aciona a bobina do relé |
 | 1 | Diodo | Proteção da bobina (opcional na simulação) |
 | 1 | Resistor 1 kΩ | Base do transistor |
-| 3 | Resistor 220 Ω | Um para cada LED |
-| 1 | LED (qualquer cor) | Representa a válvula |
-| 1 | LED vermelho | Indica solo seco |
-| 1 | LED verde | Indica solo úmido |
+| 1 | Resistor 220 Ω | Limita a corrente do LED |
+| 1 | LED | Representa a válvula (aceso = válvula aberta) |
 | 1 | Protoboard | — |
 
 ### Versão física (alimentação solar)
@@ -101,15 +98,9 @@ Sensor de umidade ──► Arduino UNO ──► Transistor ──► Relé ─
 | NO do relé | Resistor 220 Ω → ânodo do LED |
 | Cátodo do LED | Trilha − |
 
-### LEDs indicadores
-| De | Para |
-| --- | --- |
-| Arduino D7 | Resistor 220 Ω → ânodo do LED vermelho → cátodo na trilha − |
-| Arduino D6 | Resistor 220 Ω → ânodo do LED verde → cátodo na trilha − |
-
 > **Dicas do Tinkercad**
 > - A perna **dobrada** do LED é o ânodo (+).
-> - Confira se os resistores estão em **Ω** e não em **kΩ**.
+> - Confira se o resistor do LED está em **Ω** e não em **kΩ**.
 > - Os terminais do relé aparecem como "Terminal 01, 05, 06, 07, 08 e 12". Use o **multímetro** no modo resistência para identificar a bobina, o COM, o NO e o NC.
 
 ---
@@ -122,8 +113,8 @@ O código está em [`sistema_irrigacao.ino`](sistema_irrigacao.ino).
 
 | Constante | Valor padrão | Função |
 | --- | --- | --- |
-| `limiar` | `400` | Abaixo deste valor o solo é considerado seco |
-| `leituraMaxima` | `876` | Valor máximo do sensor (usado no cálculo da %) |
+| `limiar` | `400` | Abaixo deste valor o solo é considerado seco (≈ 45%) |
+| `leituraMaxima` | `876` | Valor máximo do sensor, usado no cálculo da porcentagem |
 | `mostrarLeituras` | `true` | `false` mostra apenas as mudanças de estado |
 
 ### Pinagem
@@ -131,9 +122,17 @@ O código está em [`sistema_irrigacao.ino`](sistema_irrigacao.ino).
 | Pino | Função |
 | --- | --- |
 | A0 | Leitura do sensor de umidade |
-| D13 | Acionamento do relé |
-| D7 | LED vermelho (solo seco) |
-| D6 | LED verde (solo úmido) |
+| D13 | Acionamento do relé (HIGH = válvula aberta) |
+
+### Estrutura do código
+
+| Trecho | O que faz |
+| --- | --- |
+| `paraPorcentagem()` | Converte a leitura (0 a 876) em porcentagem (0 a 100%) |
+| `setup()` | Configura o pino do relé, inicia o Serial e mostra o limiar |
+| `loop()` | Lê o sensor, decide se o solo está seco e liga ou desliga o relé |
+| `irrigando` | Guarda se a válvula está aberta, evitando mensagens repetidas |
+| `primeiraLeitura` | Mostra o estado inicial quando o sistema liga com o solo úmido |
 
 ---
 
@@ -161,12 +160,13 @@ Irriga quando a umidade ficar abaixo de 45%
 Monitorando o solo...
 
 Umidade: 69%
-[ok] SOLO UMIDO - LED verde - nao precisa irrigar
+[ok] SOLO UMIDO - nao precisa irrigar
 Umidade: 0%
-[!] SOLO SECO - LED vermelho
+[!] SOLO SECO
 [>] COMECOU A IRRIGAR - valvula aberta
+Umidade: 0%
 Umidade: 92%
-[ok] SOLO UMIDO - LED verde
+[ok] SOLO UMIDO
 [x] PAROU DE IRRIGAR - valvula fechada
 ```
 
@@ -174,7 +174,7 @@ Umidade: 92%
 
 ## ⚠️ Observações para a versão física
 
-- No sensor real, os valores de leitura são diferentes dos do Tinkercad: **recalibre** o `limiar`.
+- No sensor real, os valores de leitura são diferentes dos do Tinkercad: **recalibre** o `limiar` e o `leituraMaxima`.
 - O **diodo 1N4007** em paralelo com a válvula é obrigatório para proteger o relé e o Arduino.
 - Ligue o regulador de 5 V no **pino 5V** do Arduino e confira a tensão com um multímetro antes.
 - Sondas resistivas (YL-69) corroem com o tempo; um **sensor capacitivo** dura muito mais.
@@ -194,6 +194,7 @@ sistema_irrigacao/
 
 ## 🚀 Melhorias futuras
 
+- [ ] LEDs indicadores do estado do solo (vermelho = seco, verde = úmido)
 - [ ] Tempo máximo de rega e pausa de segurança
 - [ ] Modo de baixo consumo (sleep) para a versão solar
 - [ ] Monitoramento da tensão da bateria
