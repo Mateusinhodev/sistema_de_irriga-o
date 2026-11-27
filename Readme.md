@@ -1,202 +1,184 @@
-# 🌱 Sistema de Irrigação Automatizada
+# 🌱👨🏽‍💻 Sistema de Irrigação Automatizada Aplicada no Campo
 
-Sistema de irrigação com **Arduino UNO** que lê a umidade do solo e abre uma válvula solenoide automaticamente quando o solo está seco, fechando-a quando a umidade volta ao nível desejado. Todas as mudanças de estado aparecem no Monitor Serial.
-
-O projeto foi validado em simulação no **Tinkercad Circuits** e foi pensado para funcionar, na versão física, de forma **100% solar**, sem ligação à rede elétrica.
+Projeto interdisciplinar entre os cursos de **Informática** e **Agricultura**. Um Arduino UNO lê a umidade do solo e aciona a irrigação sozinho: liga quando a terra está seca e desliga quando ela volta a ficar úmida.
 
 ---
 
-## ✨ Funcionalidades
+## Equipe
 
-- Leitura da umidade do solo com conversão para porcentagem
-- Acionamento automático do relé (válvula) quando o solo fica seco
-- Mensagens no Monitor Serial apenas quando o estado muda:
-  - `SOLO SECO` / `COMECOU A IRRIGAR`
-  - `SOLO UMIDO` / `PAROU DE IRRIGAR`
-- Limiar de umidade ajustável no código
-- Opção de exibir ou ocultar as leituras contínuas de umidade
-
----
-
-## ⚙️ Como funciona
-
-1. A cada ~0,7 s o Arduino lê o sensor de umidade no pino **A0** e converte a leitura em porcentagem.
-2. Se a leitura estiver **abaixo do limiar**, o solo é considerado seco:
-   o pino **D13** aciona o relé e a válvula abre.
-3. Quando a leitura volta a ficar **acima do limiar**, o solo é considerado úmido:
-   o relé desliga e a válvula fecha.
-4. A variável `irrigando` guarda o estado da válvula, para que as mensagens só apareçam quando o estado muda.
-
-```
-Sensor de umidade ──► Arduino UNO ──► Transistor ──► Relé ──► Válvula solenoide
-       (A0)                (D13)
-```
+| Nome | Função / Curso |
+|---|---|
+| **Prof. Cesar Henrique** | Professor orientador (Agricultura) |
+| **Prof. Mateus Rodrigues** | Professor orientador (Informática) |
+| **Gustavo Milhomens** | Aluno (Curso de Informática) |
+| **Luiz Henrique** | Aluno (Curso de Agricultura) |
+| **Miguel Barros** | Aluno (Curso de Agricultura) |
 
 ---
 
-## 🧰 Componentes
+## Objetivo
 
-### Simulação (Tinkercad)
-
-| Qtd. | Componente | Observação |
-| --- | --- | --- |
-| 1 | Arduino Uno R3 | Alimentado pelo USB |
-| 1 | Sensor de umidade do solo | Saída analógica (0 a 876 no Tinkercad) |
-| 1 | Relé SPDT (LU-5-R) | Representa o módulo relé |
-| 1 | Transistor NPN | Aciona a bobina do relé |
-| 1 | Diodo | Proteção da bobina (opcional na simulação) |
-| 1 | Resistor 1 kΩ | Base do transistor |
-| 1 | Resistor 220 Ω | Limita a corrente do LED |
-| 1 | LED | Representa a válvula (aceso = válvula aberta) |
-| 1 | Protoboard | — |
-
-### Versão física (alimentação solar)
-
-| Qtd. | Componente | Especificação sugerida |
-| --- | --- | --- |
-| 1 | Arduino UNO R3 | — |
-| 1 | Sensor de umidade de solo | YL-69 / FC-28 com módulo LM393 |
-| 1 | Módulo relé 1 canal | Bobina 5 V, contatos 10 A |
-| 1 | Válvula solenoide | 12 V CC, normalmente fechada, 1/2" |
-| 1 | Diodo 1N4007 | Em paralelo com a válvula |
-| 1 | Placa solar | 12 V, 20 W |
-| 1 | Controlador de carga | PWM 12 V, 10 A |
-| 1 | Bateria | 12 V, 7 Ah (VRLA) |
-| 1 | Regulador step-down | LM2596, saída ajustada em 5,0 V |
-| 1 | Fusível | 5 A, no positivo da bateria |
+Automatizar a irrigação de uma área de cultivo para que a planta receba água só quando precisa. Isso evita desperdício e excesso de água no solo e diminui o trabalho manual. O projeto une a parte de programação e eletrônica (Informática) com o manejo do solo e das culturas (Agricultura).
 
 ---
 
-## 🔌 Ligações (Tinkercad)
+## Materiais utilizados
 
-### Alimentação
+| Componente | Função no projeto |
+|---|---|
+| Arduino UNO | Microcontrolador que lê o sensor e controla o relé |
+| Protoboard | Montagem e interligação do circuito |
+| Sensor de umidade do solo (com módulo comparador) | Mede a umidade da terra (saída analógica **AO**) |
+| Módulo relé | Liga e desliga a válvula solenoide |
+| Válvula solenoide | Abre e fecha a passagem de água para o aspersor |
+| Aspersor | Distribui a água sobre a área de cultivo |
+| Bomba d'água | Puxa a água do poço artesiano e manda para a tubulação |
+| Poço artesiano | Fonte de água da irrigação |
+| Mangueiras / canos | Levam a água da bomba até a válvula e o aspersor |
+| Fonte 9V | Alimentação do Arduino |
+| Fonte de alimentação de nobreak | Alimentação da válvula solenoide (pelo relé) |
+| Jumpers / fios | Conexões |
+
+---
+
+## Sistema hidráulico
+
+A água sai do **poço artesiano**, é levada pela **bomba d'água** até a **válvula solenoide** e, quando a válvula abre, segue para o **aspersor**:
+
+O Arduino não controla a bomba: ele só abre ou fecha a válvula solenoide, que libera ou corta a água para o aspersor.
+
+## Ligações
+
+| Componente | Pino do componente | Pino do Arduino |
+|---|---|---|
+| Sensor de umidade | VCC | 5V |
+| Sensor de umidade | GND | GND |
+| Sensor de umidade | **AO** (saída analógica) | **A0** |
+| Relé | VCC | 5V |
+| Relé | GND | GND |
+| Relé | IN | **D3** |
+| Bateria 9V | (+) | **VIN** (ou conector P4) |
+| Bateria 9V | (−) | GND |
+
+> ⚠️ Nunca ligue os 9V no pino **5V** do Arduino.
+
+### Circuito da válvula solenoide (potência)
+
 | De | Para |
-| --- | --- |
-| Arduino 5V | Trilha + da protoboard |
-| Arduino GND | Trilha − da protoboard |
+|---|---|
+| Fonte do nobreak (+) | **COM** do relé |
+| **NA** (normalmente aberto) do relé | Terminal 1 da válvula solenoide |
+| Terminal 2 da válvula solenoide | Fonte do nobreak (−) |
 
-### Sensor de umidade
-| Pino do sensor | Para |
-| --- | --- |
-| VCC | Trilha + |
-| GND | Trilha − |
-| SIG | Arduino A0 |
-
-### Acionamento do relé
-| De | Para |
-| --- | --- |
-| Arduino D13 | Resistor 1 kΩ → base do transistor NPN |
-| Emissor do transistor | Trilha − |
-| Coletor do transistor | Terminal 1 da bobina do relé |
-| Terminal 2 da bobina | Trilha + |
-| Diodo | Em paralelo com a bobina (faixa no lado do +) |
-
-### Válvula (LED)
-| De | Para |
-| --- | --- |
-| COM do relé | Trilha + |
-| NO do relé | Resistor 220 Ω → ânodo do LED |
-| Cátodo do LED | Trilha − |
-
-> **Dicas do Tinkercad**
-> - A perna **dobrada** do LED é o ânodo (+).
-> - Confira se o resistor do LED está em **Ω** e não em **kΩ**.
-> - Os terminais do relé aparecem como "Terminal 01, 05, 06, 07, 08 e 12". Use o **multímetro** no modo resistência para identificar a bobina, o COM, o NO e o NC.
+Quando o Arduino aciona o relé, o contato COM fecha com o NA, a válvula recebe energia e **abre a passagem de água**. Quando o relé desliga, a válvula **fecha**.
 
 ---
 
-## 💻 Código
+## Como funciona
 
-O código está em [`sistema_irrigacao.ino`](sistema_irrigacao.ino).
+1. O Arduino faz **10 leituras** do sensor (uma a cada 10 ms) e calcula a **média**, para estabilizar o valor.
+2. A leitura bruta (0 a 1023) é convertida em **porcentagem de umidade**: solo seco = 0 %, solo encharcado = 100 %.
+3. O sistema usa **histerese** (dois limites diferentes):
+   - Se a umidade cair para **30 % ou menos** → o relé liga e a **válvula solenoide abre**.
+   - A válvula só **fecha** quando a umidade chegar a **60 % ou mais**.
+4. A cada 1 segundo o estado aparece no **Monitor Serial**.
 
-### Parâmetros ajustáveis
+### Por que usar histerese?
 
-| Constante | Valor padrão | Função |
-| --- | --- | --- |
-| `limiar` | `400` | Abaixo deste valor o solo é considerado seco (≈ 45%) |
-| `leituraMaxima` | `876` | Valor máximo do sensor, usado no cálculo da porcentagem |
-| `mostrarLeituras` | `true` | `false` mostra apenas as mudanças de estado |
-
-### Pinagem
-
-| Pino | Função |
-| --- | --- |
-| A0 | Leitura do sensor de umidade |
-| D13 | Acionamento do relé (HIGH = válvula aberta) |
-
-### Estrutura do código
-
-| Trecho | O que faz |
-| --- | --- |
-| `paraPorcentagem()` | Converte a leitura (0 a 876) em porcentagem (0 a 100%) |
-| `setup()` | Configura o pino do relé, inicia o Serial e mostra o limiar |
-| `loop()` | Lê o sensor, decide se o solo está seco e liga ou desliga o relé |
-| `irrigando` | Guarda se a válvula está aberta, evitando mensagens repetidas |
-| `primeiraLeitura` | Mostra o estado inicial quando o sistema liga com o solo úmido |
-
----
-
-## ▶️ Como executar
-
-### No Tinkercad
-1. Monte o circuito conforme a seção **Ligações**.
-2. Clique em **Código**, selecione **Texto** e cole o conteúdo de `sistema_irrigacao.ino`.
-3. Clique em **Iniciar simulação** e abra o **Monitor serial**.
-4. Clique no sensor de umidade e arraste o controle entre seco e úmido.
-
-### No Arduino físico
-1. Abra `sistema_irrigacao.ino` na Arduino IDE (o arquivo deve estar em uma pasta chamada `sistema_irrigacao`).
-2. Selecione a placa **Arduino Uno** e a porta correta.
-3. Clique em **Carregar** e abra o Monitor Serial em **9600 baud**.
-4. Calibre o `limiar` e o `leituraMaxima` com os valores do seu sensor no solo real.
-
----
-
-## 🖥️ Exemplo de saída no Monitor Serial
+Com um único limite (por exemplo, 50 %), a umidade ficaria oscilando em volta desse valor e o relé ligaria e desligaria sem parar. Isso desgasta o relé e a válvula. Com dois limites, o sistema liga com o solo seco e só desliga quando ele estiver bem úmido.
 
 ```
-=== Sistema de Irrigacao Automatizada ===
-Irriga quando a umidade ficar abaixo de 45%
-Monitorando o solo...
-
-Umidade: 69%
-[ok] SOLO UMIDO - nao precisa irrigar
-Umidade: 0%
-[!] SOLO SECO
-[>] COMECOU A IRRIGAR - valvula aberta
-Umidade: 0%
-Umidade: 92%
-[ok] SOLO UMIDO
-[x] PAROU DE IRRIGAR - valvula fechada
+Umidade (%)
+ 100 ┤
+  60 ┤- - - - - - - - - - - ●───── desliga aqui
+     │                   ╱
+     │                 ╱   (irrigando)
+  30 ┤- - - ●─────────╱- - - - - - liga aqui
+     │     ╱
+   0 ┼─────────────────────────────► tempo
 ```
 
 ---
 
-## ⚠️ Observações para a versão física
+## Calibração do sensor
 
-- No sensor real, os valores de leitura são diferentes dos do Tinkercad: **recalibre** o `limiar` e o `leituraMaxima`.
-- O **diodo 1N4007** em paralelo com a válvula é obrigatório para proteger o relé e o Arduino.
-- Ligue o regulador de 5 V no **pino 5V** do Arduino e confira a tensão com um multímetro antes.
-- Sondas resistivas (YL-69) corroem com o tempo; um **sensor capacitivo** dura muito mais.
-- Não use o USB e o regulador ao mesmo tempo no pino 5V.
+Cada sensor e cada tipo de solo dão valores um pouco diferentes, então é importante calibrar:
+
+1. Carregue o código no Arduino e abra o **Monitor Serial** em **9600 baud**.
+2. Deixe o sensor **no ar** ou em **terra totalmente seca** e anote a `Leitura bruta` → esse é o `VALOR_SECO`.
+3. Coloque o sensor em **terra encharcada** (ou em um copo d'água) e anote a `Leitura bruta` → esse é o `VALOR_MOLHADO`.
+4. Altere as constantes no código:
+
+```cpp
+const int VALOR_SECO    = 1023;  // troque pelo valor medido no seco
+const int VALOR_MOLHADO = 800;   // troque pelo valor medido no molhado
+```
+
+5. Se quiser, ajuste os limites de acordo com a cultura plantada (orientação da equipe de Agricultura):
+
+```cpp
+const int UMIDADE_LIGA    = 30;  // liga a irrigação
+const int UMIDADE_DESLIGA = 60;  // desliga a irrigação
+```
 
 ---
 
-## 📁 Estrutura do repositório
+## Como usar
+
+1. Instale a [Arduino IDE](https://www.arduino.cc/en/software).
+2. Monte o circuito conforme a tabela de ligações.
+3. Abra o arquivo `.ino` do projeto na IDE.
+4. Em **Ferramentas → Placa**, selecione **Arduino UNO** e escolha a porta correta.
+5. Clique em **Carregar (Upload)**.
+6. Abra o **Monitor Serial (9600 baud)** para acompanhar o funcionamento.
+
+### Exemplo de saída no Monitor Serial
 
 ```
-sistema_irrigacao/
-├── sistema_irrigacao.ino   # código do Arduino
-└── README.md               # este arquivo
+Leitura bruta: 1010  | Umidade: 5 %  | Irrigacao: LIGADA
+Leitura bruta: 935  | Umidade: 38 %  | Irrigacao: LIGADA
+Leitura bruta: 862  | Umidade: 70 %  | Irrigacao: DESLIGADA
 ```
 
 ---
 
-## 🚀 Melhorias futuras
+## Parâmetros do código
 
-- [ ] LEDs indicadores do estado do solo (vermelho = seco, verde = úmido)
-- [ ] Tempo máximo de rega e pausa de segurança
-- [ ] Modo de baixo consumo (sleep) para a versão solar
-- [ ] Monitoramento da tensão da bateria
-- [ ] Display LCD com a umidade em tempo real
-- [ ] Monitoramento remoto com ESP8266/ESP32
+| Constante | Valor padrão | Descrição |
+|---|---|---|
+| `rele` | `3` | Pino digital do relé |
+| `sensor` | `A0` | Pino analógico do sensor |
+| `VALOR_SECO` | `1023` | Leitura bruta com o solo seco |
+| `VALOR_MOLHADO` | `800` | Leitura bruta com o solo encharcado |
+| `UMIDADE_LIGA` | `30` | Umidade (%) em que a irrigação liga |
+| `UMIDADE_DESLIGA` | `60` | Umidade (%) em que a irrigação desliga |
+| `NUM_LEITURAS` | `10` | Quantidade de leituras para a média |
+
+---
+
+## Problemas comuns
+
+| Problema | Possível causa / solução |
+|---|---|
+| Umidade sempre 0 % ou 100 % | Calibração errada ou sensor ligado no **DO** em vez do **AO** |
+| Relé funciona invertido | O módulo é ativo em HIGH: inverta os `digitalWrite` do relé |
+| Relé liga e desliga sem parar | Aumente a diferença entre `UMIDADE_LIGA` e `UMIDADE_DESLIGA` |
+| Leituras muito instáveis | Aumente `NUM_LEITURAS` e confira as conexões na protoboard |
+| Relé estala, mas a água não passa | Confira a tensão da válvula solenoide, as ligações COM/NA e a pressão da água (algumas válvulas precisam de pressão mínima para abrir) |
+| Arduino reinicia ao acionar o relé | Separe a alimentação do relé/carga da alimentação do Arduino |
+
+---
+
+## Melhorias futuras
+
+- Usar sensor de umidade **capacitivo**, que sofre menos corrosão que o resistivo.
+- Adicionar um **display LCD** para mostrar a umidade no campo.
+- Registrar os dados (cartão SD ou envio via Wi-Fi com ESP8266/ESP32).
+- Usar vários sensores para áreas maiores.
+- Adicionar um tempo máximo de irrigação como proteção em caso de falha do sensor.
+
+---
+
+## Créditos
+
+Projeto desenvolvido em parceria entre os cursos de **Informática** e **Agricultura**, sob orientação dos professores **Cesar Henrique** (Agricultura) e **Mateus Rodrigues** (Informática), com os alunos **Gustavo Milhomens**, **Luiz Henrique** e **Miguel Barros**.
